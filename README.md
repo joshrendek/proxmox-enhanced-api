@@ -4,7 +4,7 @@
 
 Config file will live most likely under /etc/proxmox-enhanced-api/
 
-# Authentication
+## Authentication
 
 It will use the same auth mechanism as the Proxmox API and will just proxy auth requests to verify them against the regular API. It will also provide the ability to just use the user/pass instead of a ticket.
 
