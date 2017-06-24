@@ -27,19 +27,23 @@ Type=simple
 WantedBy=default.target
 `
 
+const peaConfig = `
+[proxmox]
+host = "192.168.1.2"
+node = "pve"
+user = "root@pam"
+pass = "foobar123"
+
+[api]
+# if skip_auth is true, you need to enter user/pass credentials under proxmox,
+# otherwise you need to pass the user/pass a basic auth
+skip_auth = true
+`
+
 func main() {
 	initBool := false
 	flag.BoolVar(&initBool, "init", false, "init systemd / config")
 	flag.Parse()
-
-	viper.SetConfigName("config")                     // name of config file (without extension)
-	viper.AddConfigPath("/etc/proxmox-enhanced-api/") // path to look for the config file in
-	err := viper.ReadInConfig()                       // Find and read the config file
-	if err != nil {                                   // Handle errors reading the config file
-		panic(fmt.Errorf("Fatal error config file: %s \n", err))
-	}
-
-	fmt.Println("NODE: ", viper.GetString("proxmox.node"))
 
 	if initBool {
 		fmt.Println("[systemd] Writing unit")
@@ -51,8 +55,34 @@ func main() {
 		exec.Command("systemctl", "daemon-reload").Run()
 		exec.Command("systemctl", "start", "proxmox-enhanced-api.service").Run()
 		fmt.Println("[systemd] Finished writing unit")
+
+		fmt.Println("[config] Writing config")
+		err = os.Mkdir("/etc/proxmox-enhanced-api", os.FileMode(0644))
+		if err != nil {
+			log.Fatalln(err)
+		}
+		// init config
+		if _, err := os.Stat("/etc/proxmox-enhanced-api/config.toml"); os.IsNotExist(err) {
+			// path/to/whatever does not exist
+			err := ioutil.WriteFile("/etc/proxmox-enhanced-api/config.toml", []byte(peaConfig), 0644)
+			if err != nil {
+				log.Fatalln(err)
+			}
+		}
+
+		fmt.Println("[config] Finished writing config")
+
 		os.Exit(0)
 	}
+
+	viper.SetConfigName("config")                     // name of config file (without extension)
+	viper.AddConfigPath("/etc/proxmox-enhanced-api/") // path to look for the config file in
+	err := viper.ReadInConfig()                       // Find and read the config file
+	if err != nil {                                   // Handle errors reading the config file
+		panic(fmt.Errorf("Fatal error config file: %s \n", err))
+	}
+
+	fmt.Println("NODE: ", viper.GetString("proxmox.node"))
 	// systemctl daemon-reload
 	// systemctl stop proxmox-enhanced-api.service
 	// systemctl start proxmox-enhanced-api.service
