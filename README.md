@@ -43,6 +43,34 @@ Example with basic auth:
 curl -u "root@pam":root http://192.168.1.2:8080/vm
 ```
 
+# Example response
+
+``` json
+[
+  {
+    "name": "jenkins-slave",
+    "vmid": 101,
+    "status": "running",
+    "mac_address": "4A:BB:E4:82:C9:4C",
+    "ip_address": "192.168.1.183"
+  },
+  {
+    "name": "testing",
+    "vmid": 104,
+    "status": "running",
+    "mac_address": "BE:D9:B5:7A:42:19",
+    "ip_address": "192.168.1.195"
+  },
+  {
+    "name": "zoneminder",
+    "vmid": 103,
+    "status": "running",
+    "mac_address": "3A:11:9E:32:9B:D4",
+    "ip_address": "192.168.1.167"
+  }
+]
+```
+
 ## Authentication
 
 It will use the same auth mechanism as the Proxmox API and will just proxy auth requests to verify them against the regular API. It will also provide the ability to just use the user/pass instead of a ticket.
