@@ -25,6 +25,8 @@ After=network.target
 [Service]
 ExecStart=/root/proxmox-enhanced-api
 Type=simple
+Restart=always
+RestartSec=3
 
 [Install]
 WantedBy=default.target
