@@ -49,7 +49,7 @@ It will use the same auth mechanism as the Proxmox API and will just proxy auth 
 
 ## Guest VM IP API
 
-- [ ] Ability to list all VMs on host with MACs and IPs
+- [x] Ability to list all VMs on host with MACs and IPs
 
 ## VM to DNS Registration
 
