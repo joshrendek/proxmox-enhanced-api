@@ -1,0 +1,11 @@
+package: github.com/joshrendek/proxmox-enhanced-api
+import:
+- package: github.com/davecgh/go-spew
+  version: ^1.1.0
+  subpackages:
+  - spew
+- package: gopkg.in/gin-gonic/gin.v1
+  version: ^1.1.4
+- package: github.com/spf13/viper
+- package: github.com/fsnotify/fsnotify
+  version: ^1.4.2

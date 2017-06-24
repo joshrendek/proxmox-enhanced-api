@@ -1,8 +1,47 @@
 # proxmox-enhanced-api
 
+# Requirements
+
+``` shell
+apt-get update && apt-get install -y arp-scan
+```
+
 `proxmox-enhanced-api` will consist of the following components in a single binary. It can be deployed on the server, ran once to install systemd template, and will run itself as a daemon from there.
 
-Config file will live most likely under /etc/proxmox-enhanced-api/
+# Installation
+
+Download the binary to `/root/` and run `./proxmox-enhanced-api -init` -- this will generate a config and systemd unit files. You can then edit the config file located in `/etc/proxmox-enhanced-api/config.toml` and restart the service using `systemctl restart proxmox-enhanced-api.service`.
+
+*Example Configuration*:
+
+``` bash
+[proxmox]
+host = "192.168.1.2"
+node = "pve"
+user = "root@pam"
+pass = "foobar123"
+
+[api]
+# if skip_auth is true, you need to enter user/pass credentials under proxmox,
+# otherwise you need to pass the user/pass a basic auth
+skip_auth = true
+```
+
+# Accessing the service
+
+You can access it by going to `http://YOUR_VM_IP:8080/vm`
+
+Example with `skip_auth = true`:
+
+``` bash
+curl http://192.168.1.2:8080/vm
+```
+
+Example with basic auth:
+
+``` bash
+curl -u "root@pam":root http://192.168.1.2:8080/vm
+```
 
 ## Authentication
 
@@ -10,8 +49,7 @@ It will use the same auth mechanism as the Proxmox API and will just proxy auth 
 
 ## Guest VM IP API
 
-- [ ] Ability to list all VMs on host with MACs
-- [ ] Ability to query a VM by name or MAC to get the IP of the machine
+- [ ] Ability to list all VMs on host with MACs and IPs
 
 ## VM to DNS Registration
 
