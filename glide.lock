@@ -1,6 +1,8 @@
-hash: 8c5f2df40536c837c8bed8128fd7e04af6566c054e00616397bdae9e87b1229f
-updated: 2017-06-23T21:56:48.293771573-04:00
+hash: ac8ff9004e8d1112e37aae35147723db18a7bed0c3e27af93c68200ea5e2c784
+updated: 2017-06-24T13:06:40.510392896-04:00
 imports:
+- name: github.com/crackcomm/cloudflare
+  version: dc358193164414054010e3fafdb6cc8def4eb864
 - name: github.com/davecgh/go-spew
   version: 346938d642f2ec3594ed81d874461961cd0faa76
   subpackages:

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -8,7 +9,9 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"time"
 
+	"github.com/crackcomm/cloudflare"
 	"github.com/gin-gonic/gin"
 	"github.com/joshrendek/proxmox-enhanced-api/proxmox"
 	"github.com/spf13/viper"
@@ -38,6 +41,13 @@ pass = "foobar123"
 # if skip_auth is true, you need to enter user/pass credentials under proxmox,
 # otherwise you need to pass the user/pass a basic auth
 skip_auth = true
+
+[dns]
+zone = "example.com"
+
+[cloudflare]
+api_key = "123"
+email = "me@example.com"
 `
 
 func main() {
@@ -86,7 +96,7 @@ func main() {
 	// systemctl daemon-reload
 	// systemctl stop proxmox-enhanced-api.service
 	// systemctl start proxmox-enhanced-api.service
-
+	go registerDNS()
 	go proxmox.StartArper()
 	r := gin.Default()
 	r.GET("/vm", func(c *gin.Context) {
@@ -116,6 +126,76 @@ func main() {
 		}
 		c.JSON(http.StatusOK, vms)
 	})
-	r.Run()
+	port := "8080"
+	if os.Getenv("PORT") != "" {
+		port = os.Getenv("PORT")
+	}
+	err = http.ListenAndServeTLS(fmt.Sprintf(":%s", port), "/etc/pve/nodes/pve/pve-ssl.pem", "/etc/pve/nodes/pve/pve-ssl.key", r)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func registerDNS() {
+	localList := []proxmox.VirtualMachine{}
+	proxUser := viper.GetString("proxmox.user")
+	proxPass := viper.GetString("proxmox.pass")
+	prox, err := proxmox.NewProxmox(proxUser, proxPass, viper.GetString("proxmox.host"))
+	if err != nil {
+		panic(err)
+	}
+
+	client := cloudflare.New(&cloudflare.Options{
+		Email: viper.GetString("cloudflare.email"),
+		Key:   viper.GetString("cloudflare.api_key"),
+	})
+
+	var zone *cloudflare.Zone
+
+	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(ctx, time.Second*30)
+	defer cancel()
+
+	zones, err := client.Zones.List(ctx)
+	if err != nil {
+		log.Fatal(err)
+	} else if len(zones) == 0 {
+		log.Fatal("No zones were found")
+	}
+
+	for _, z := range zones {
+		if z.Name == viper.GetString("dns.zone") {
+			zone = z
+		}
+	}
+
+	records, err := client.Records.List(ctx, zone.ID)
+	for _, record := range records {
+		log.Printf("RECORD: %#v", record)
+	}
+
+	for {
+		localList, _ = prox.VirtualMachines()
+		for _, v := range localList {
+			fqdn := fmt.Sprintf("%s.%s", v.Name, viper.GetString("dns.zone"))
+			log.Printf("DNS: %s -> %s", v.Name, fqdn)
+			createRecord(fqdn, v.IPAddress, zone, client)
+		}
+		time.Sleep(30 * time.Second)
+	}
+}
+
+func createRecord(name, ip string, zone *cloudflare.Zone, client *cloudflare.Client) {
+	cfRecord := &cloudflare.Record{Type: "A", Name: name,
+		Content: ip, ZoneID: zone.ID, ZoneName: zone.Name}
+	log.Println("[dns] createRecord", name)
+	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
+	defer cancel()
+	err := client.Records.Create(ctx, cfRecord)
+	if err.Error() == "The record already exists." {
+		client.Records.Patch(ctx, cfRecord)
+		log.Println("[dns] patching record", name)
+	}
 
 }

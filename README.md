@@ -8,9 +8,28 @@ apt-get update && apt-get install -y arp-scan
 
 `proxmox-enhanced-api` will consist of the following components in a single binary. It can be deployed on the server, ran once to install systemd template, and will run itself as a daemon from there.
 
+# Security
+
+Auth is currently done with user/pass or skipped (and user/pass need to be set in config, see below).
+
+The server listens on port `8080` using the same SSL certification that proxmox uses for the UI, located at:
+
+``` json
+/etc/pve/nodes/pve/pve-ssl.pem
+/etc/pve/nodes/pve/pve-ssl.key
+```
+
+Credentials are verified against the API over SSL as well.
+
+Ticket auth is not supported currently.
+
 # Installation
 
-Download the binary to `/root/` and run `./proxmox-enhanced-api -init` -- this will generate a config and systemd unit files. You can then edit the config file located in `/etc/proxmox-enhanced-api/config.toml` and restart the service using `systemctl restart proxmox-enhanced-api.service`.
+Download the binary to `/root/` and run `./proxmox-enhanced-api -init`.
+
+This will generate a config and systemd unit files.
+You can then edit the config file located in `/etc/proxmox-enhanced-api/config.toml` and restart the service using
+`systemctl restart proxmox-enhanced-api.service`.
 
 *Example Configuration*:
 
@@ -25,6 +44,13 @@ pass = "foobar123"
 # if skip_auth is true, you need to enter user/pass credentials under proxmox,
 # otherwise you need to pass the user/pass a basic auth
 skip_auth = true
+
+[dns]
+zone = "example.com"
+
+[cloudflare]
+api_key = "123"
+email = "me@example.com"
 ```
 
 # Accessing the service
@@ -34,13 +60,13 @@ You can access it by going to `http://YOUR_VM_IP:8080/vm`
 Example with `skip_auth = true`:
 
 ``` bash
-curl http://192.168.1.2:8080/vm
+curl -k https://192.168.1.2:8080/vm
 ```
 
 Example with basic auth:
 
 ``` bash
-curl -u "root@pam":root http://192.168.1.2:8080/vm
+curl -k -u "root@pam":root https://192.168.1.2:8080/vm
 ```
 
 # Example response
@@ -71,17 +97,13 @@ curl -u "root@pam":root http://192.168.1.2:8080/vm
 ]
 ```
 
-## Authentication
-
-It will use the same auth mechanism as the Proxmox API and will just proxy auth requests to verify them against the regular API. It will also provide the ability to just use the user/pass instead of a ticket.
-
 ## Guest VM IP API
 
 - [x] Ability to list all VMs on host with MACs and IPs
 
 ## VM to DNS Registration
 
-- [ ] Take all VMs and provide the ability to register them to a DNS Provider configured in the `config file`
+- [x] Take all VMs and provide the ability to register them to a DNS Provider configured in the `config file`
 - [ ] Initial providers:
-  - [ ] CloudFlare
+  - [x] CloudFlare
   - [ ] Route53
